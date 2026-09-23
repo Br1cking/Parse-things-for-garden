@@ -1,9 +1,11 @@
 import os
+
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
 from parser_characteristic import get_characterstic
 from parser_images import get_images
+
 
 def take_info(date):
     for i in range(len(date)):
