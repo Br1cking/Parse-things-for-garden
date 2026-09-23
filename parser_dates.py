@@ -2,6 +2,7 @@ import os
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 
 from parser_characteristic import get_characterstic
 from parser_images import get_images
@@ -14,6 +15,13 @@ def take_info(date):
 
     return date
 # Функция для обработки данных
+
+def load_all_products(page):
+    load_more_btn = 'button[class="button button--transparent-gray"]'
+    while page.locator(load_more_btn).count() > 0:
+        page.click(load_more_btn)
+        page.wait_for_timeout(5000)
+        # Поиск кнопки загрузить ещё и её нажатие до момента пока она не исчезнет, т.е. не будет максимального количество позиций.
 
 def parser(rqest):
     with sync_playwright() as p:
@@ -31,8 +39,9 @@ def parser(rqest):
         page.goto("https://instrument.ru/login/", timeout=time_out)
         page.wait_for_load_state("load", timeout=time_out)
 
-        page.fill("input[type='email']", "login")
-        page.fill("input[type='password']", "password")
+        load_dotenv()
+        page.fill("input[type='email']", os.getenv("LOGIN"))
+        page.fill("input[type='password']", os.getenv("PASSWORD"))
         page.click("button[type='submit']")
 
         page.wait_for_url(lambda url: "login" not in url, timeout=time_out)
@@ -45,13 +54,9 @@ def parser(rqest):
                 break
             except Exception as e:
                 page.wait_for_timeout(5000)
+                # Здесь открывается страница с категорией из параметра функции.
 
-        load_more_btn = 'button[class="button button--transparent-gray"]'
-        while page.locator(load_more_btn).count() > 0:
-            page.click(load_more_btn)
-            page.wait_for_timeout(5000)
-        # Здесь открывается страница с категорией из параметра функции.
-        # Поиск кнопки загрузить ещё и её нажатие до момента пока она не исчезнет, т.е. не будет максимального количество позиций.
+        load_all_products(page)
 
         html = str(page.content())
         page.close()
@@ -60,6 +65,8 @@ def parser(rqest):
 
 
         title = soup.title.string
+        os.mkdir(f"Товары")
+        os.mkdir(f"Товары\\Фото для загрузки")
         directory = f"Товары\\{title}"
         os.mkdir(directory)
 
@@ -94,7 +101,7 @@ def parser(rqest):
         # Сбор ссылок на товары для получения фото и характеристик
 
         with open(f"{directory}\\{title}.csv", "w", encoding="utf-8") as f:
-            f.write('"name : Название";"supplier : Поставщик";"article : Артикул";"price : Цена";"currency : Валюта";"body : Описание"\n')
+            f.write('"name : Название","supplier : Поставщик","article : Артикул","price : Цена","currency : Валюта","body : Описание"\n')
             i = 0
             count = 1
             index = 100
@@ -105,7 +112,7 @@ def parser(rqest):
                     print(f"Характеристики для товара с артикулом {item[1]}")
                     print(e)
 
-                f.write(f'"{names[i]}";"мир инструмента";"{articles[i]}";{prices[i]};RUB;"{characteristic}"\n')
+                f.write(f'"{names[i]}","мир инструмента","{articles[i]}",{prices[i]},RUB,"{characteristic}"\n')
 
                 try:
                     get_images(item, directory_for_photo, browser, index)

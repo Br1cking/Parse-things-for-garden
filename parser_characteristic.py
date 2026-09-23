@@ -15,6 +15,7 @@ def get_characterstic(ref, browser):
     page = context.new_page()
 
     page.goto(ref, timeout=time_out)
+    page.mouse.wheel(0, 1000)
     try:
         locator = page.locator('[id="DetailDescription"]').locator('[class="detail-dropdown__header"]')
         locator.click(timeout=10000)

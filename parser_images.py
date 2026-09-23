@@ -10,7 +10,7 @@ def get_images(ref, path, browser, index):
     while True:
         try:
             page.goto(ref[0], timeout=time_out)
-            page.wait_for_load_state("networkidle", timeout=time_out)
+            page.wait_for_load_state("networkidle", timeout=999999999999999999999999)
             break
         except Exception:
             page.wait_for_timeout(5000)
