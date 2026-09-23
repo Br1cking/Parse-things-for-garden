@@ -13,6 +13,7 @@ def take_info(date):
         date[i] = curr.string
 
     return date
+# Функция для обработки данных
 
 def parser(rqest):
     with sync_playwright() as p:
@@ -21,6 +22,7 @@ def parser(rqest):
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             no_viewport=False
         )
+        # Здесь создаётся экземпляр браузера
 
         time_out = 120000
 
@@ -34,6 +36,7 @@ def parser(rqest):
         page.click("button[type='submit']")
 
         page.wait_for_url(lambda url: "login" not in url, timeout=time_out)
+        # Здесь проиходит вход в аккаунт с которого нам нужна информация
 
         while True:
             try:
@@ -47,11 +50,14 @@ def parser(rqest):
         while page.locator(load_more_btn).count() > 0:
             page.click(load_more_btn)
             page.wait_for_timeout(5000)
+        # Здесь открывается страница с категорией из параметра функции.
+        # Поиск кнопки загрузить ещё и её нажатие до момента пока она не исчезнет, т.е. не будет максимального количество позиций.
 
         html = str(page.content())
         page.close()
         context.close()
         soup = BeautifulSoup(html, "html.parser")
+
 
         title = soup.title.string
         directory = f"Товары\\{title}"
@@ -59,10 +65,12 @@ def parser(rqest):
 
         directory_for_photo = f"{directory}\\photo"
         os.mkdir(directory_for_photo)
+        # Создание экземпляра супа для изъятия интересующей информации и создания папок под csv файлы и фото.
 
         section = soup.find('section', {"class": "wrapper attend-products__swiper wrapper--white wrapper--no-padding"})
         if section:
             section.decompose()
+        # Удаление рекламы
 
         names = take_info(soup.find_all('a', attrs={"itemprop": "name"}))
 
@@ -70,17 +78,20 @@ def parser(rqest):
 
         count = len(articles)
         print(count)
+        # Вытаскивает из супа наименования и артикулы. Вывод количества позиций для отладки.
 
         prices = soup.find_all('span', attrs={"itemprop": "price"})[:len(articles) * 2]
         prices = [prices[i] for i in range(len(prices)) if i % 2 == 1]
         for i in range(len(prices)):
             curr = BeautifulSoup(str(prices[i]), "html.parser")
             prices[i] = curr.find('span', itemprop='price').get('content')
+        # Сбор цен товаров
 
         references = soup.find_all('a', attrs={"itemprop": "name"})
         for i in range(len(references)):
             curr = BeautifulSoup(str(references[i]), "html.parser")
             references[i] = [f"https://instrument.ru{curr.find('a', itemprop='name').get('href')}", articles[i]]
+        # Сбор ссылок на товары для получения фото и характеристик
 
         with open(f"{directory}\\{title}.csv", "w", encoding="utf-8") as f:
             f.write('"name : Название";"supplier : Поставщик";"article : Артикул";"price : Цена";"currency : Валюта";"body : Описание"\n')
@@ -106,5 +117,7 @@ def parser(rqest):
                 i += 1
                 count += 1
                 index += 3
+        # Соответственно сбор и сохранение всех характеристик и фото для текущей категории
 
         browser.close()
+        # Браузер закрывается
